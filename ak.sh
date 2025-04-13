@@ -181,7 +181,7 @@ yay -S hoffice ttf-d2coding --noconfirm
 clear
 echo -e "${BLUE}내가 잘쓰는 여러가지 설치하는 중...${NC}"
 yay -S sublime-text-4 visual-studio-code-bin teams teams-for-linux realvnc-vnc-server p3x-onenote-bin unciv-bin snes9x-git freetube github-cli \
-        whatsapp-for-linux epson-inkjet-printer-escpr \
+        whatsapp-for-linux epson-inkjet-printer-escpr freetuxtv yt-dlp freetube mullvad-browser-bin \
         --noconfirm
 
 # 기존 kime 설치를 제거합니다
