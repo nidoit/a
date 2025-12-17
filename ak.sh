@@ -7,6 +7,7 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # 일반 사용자 확인
@@ -15,8 +16,13 @@ if [ "$EUID" = 0 ]; then
     exit 1
 fi
 
+echo -e "${YELLOW}============================================${NC}"
+echo -e "${YELLOW}     Arch Linux 한글 환경 설치 스크립트      ${NC}"
+echo -e "${YELLOW}         Kime-git 최신 버전 포함            ${NC}"
+echo -e "${YELLOW}============================================${NC}"
+
 # GPU Detection and Configuration
-echo -e "${BLUE}GPU를 감지하고 설정 중...${NC}"
+echo -e "\n${BLUE}GPU를 감지하고 설정 중...${NC}"
 
 detect_gpu() {
     local gpu_info=$(lspci | grep -i 'vga\|3d\|display')
@@ -94,7 +100,7 @@ if [ -n "$GPU_CONFIG" ]; then
 fi
 
 # 시스템 업데이트
-echo -e "${BLUE}시스템을 업데이트하고 있습니다...${NC}"
+echo -e "\n${BLUE}시스템을 업데이트하고 있습니다...${NC}"
 sudo pacman -Syu --noconfirm
 
 # 필요한 의존성 패키지들을 설치합니다
@@ -108,10 +114,11 @@ sudo pacman -S --needed --noconfirm \
     ttf-jetbrains-mono ttf-jetbrains-mono-nerd nodejs npm cronie \
     obs-studio v4l2loopback-dkms virtualbox virtualbox-host-modules-arch \
     nano conky samba net-tools bluez bluez-utils bluedevil unzip dosfstools \
-    texlive-core texlive-bin texlive-latexextra texlive-fontsextra texlive-langenglish texlive-langextra texstudio
-    
+    texlive-core texlive-bin texlive-latexextra texlive-fontsextra texlive-langenglish texlive-langextra texstudio \
+    plasma-wayland-protocols wayland-protocols
+
 # 폰트 설치
-echo -e "${BLUE}추가 한글 폰트를 설치합니다...${NC}"
+echo -e "\n${BLUE}추가 한글 폰트를 설치합니다...${NC}"
 
 # 임시 디렉토리 생성
 TEMP_DIR=$(mktemp -d)
@@ -145,14 +152,14 @@ rm -rf "$TEMP_DIR"
 
 # Rust가 설치되어 있지 않다면 설치합니다
 if ! command -v rustc &> /dev/null; then
-    echo -e "${BLUE}Rust를 설치하고 있습니다...${NC}"
+    echo -e "\n${BLUE}Rust를 설치하고 있습니다...${NC}"
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     source "$HOME/.cargo/env"
 fi
 
 # yay가 설치되어 있지 않다면 설치합니다
 if ! command -v yay &> /dev/null; then
-    echo -e "${BLUE}yay를 설치하고 있습니다...${NC}"
+    echo -e "\n${BLUE}yay를 설치하고 있습니다...${NC}"
     cd /tmp
     git clone https://aur.archlinux.org/yay.git
     cd yay
@@ -164,163 +171,371 @@ fi
 
 # Julia 설치 (juliaup을 통해)
 clear
-echo -e "${BLUE}Julia를 설치하는 중...${NC}"
+echo -e "\n${BLUE}Julia를 설치하는 중...${NC}"
 curl -fsSL https://install.julialang.org | sh
 
 # Naver Whale 설치
 clear
-echo -e "${BLUE}Naver Whale을 설치하는 중...${NC}"
+echo -e "\n${BLUE}Naver Whale을 설치하는 중...${NC}"
 yay -S naver-whale-stable --noconfirm
 
 # 한글 오피스 설치 
 clear
-echo -e "${BLUE}한글 오피스를 설치하는 중...${NC}"
+echo -e "\n${BLUE}한글 오피스를 설치하는 중...${NC}"
 yay -S hoffice ttf-d2coding --noconfirm
 
-# sublime visual-studio-code-bin 오피스 설치 
+# sublime visual-studio-code-bin 등 여러 프로그램 설치
 clear
-echo -e "${BLUE}내가 잘쓰는 여러가지 설치하는 중...${NC}"
+echo -e "\n${BLUE}내가 잘쓰는 여러가지 설치하는 중...${NC}"
 yay -S sublime-text-4 visual-studio-code-bin teams teams-for-linux realvnc-vnc-server p3x-onenote-bin unciv-bin snes9x-git freetube github-cli \
-        whatsapp-for-linux epson-inkjet-printer-escpr freetuxtv yt-dlp freetube mullvad-browser-bin \
+        whatsapp-for-linux epson-inkjet-printer-escpr freetuxtv yt-dlp mullvad-browser-bin \
         --noconfirm
 
 # 기존 kime 설치를 제거합니다
-echo -e "${BLUE}기존 kime 설치를 제거하고 있습니다...${NC}"
-sudo pacman -Rns kime kime-bin --noconfirm || true
-rm -rf ~/.config/kime || true
+echo -e "\n${BLUE}기존 kime 설치를 제거하고 있습니다...${NC}"
+sudo pacman -Rns kime kime-bin --noconfirm 2>/dev/null || true
+yay -Rns kime-git kime-git-debug --noconfirm 2>/dev/null || true
 
-# kime-bin을 설치합니다
-echo -e "${BLUE}kime-bin을 설치하고 있습니다...${NC}"
-yay -S --noconfirm kime-bin
+# 충돌하는 파일 삭제
+echo -e "${BLUE}충돌하는 파일을 정리합니다...${NC}"
+sudo rm -f /usr/lib/debug/usr/bin/kime-*.debug 2>/dev/null || true
+sudo rm -f /usr/lib/debug/usr/lib/gtk-3.0/3.0.0/immodules/im-kime.so.debug 2>/dev/null || true
+sudo rm -f /usr/lib/debug/usr/lib/gtk-4.0/4.0.0/immodules/libkime-gtk4.so.debug 2>/dev/null || true
+sudo rm -f /usr/lib/debug/usr/lib/libkime_engine.so.debug 2>/dev/null || true
+sudo rm -f /usr/lib/debug/usr/lib/qt/plugins/platforminputcontexts/libkimeplatforminputcontextplugin.so.debug 2>/dev/null || true
+sudo rm -f /usr/lib/debug/usr/lib/qt6/plugins/platforminputcontexts/libkimeplatforminputcontextplugin.so.debug 2>/dev/null || true
+rm -rf ~/.config/kime 2>/dev/null || true
 
-# Hancom Office 관련 디렉토리 설정
-HNCDIR="/opt/hnc"
-HNCCONTEXT="/opt/hnc/hoffice11/Bin/qt/plugins/platforminputcontexts"
+# kime-git을 설치합니다 (Qt6 문제 해결된 최신 버전)
+echo -e "\n${BLUE}kime-git을 설치하고 있습니다 (Qt6 문제 해결 버전)...${NC}"
+yay -S --noconfirm kime-git
 
-# kime 설정 파일 생성
+# kime 설정 디렉토리 생성
+echo -e "${BLUE}kime 설정을 준비합니다...${NC}"
 mkdir -p ~/.config/kime
-echo -e "${BLUE}kime 설정 파일을 생성합니다...${NC}"
-cat > ~/.config/kime/kime.yaml << 'EOL'
-log:
- version: 1
+
+# KDE 최적화된 kime 설정 파일 생성
+echo -e "${BLUE}KDE 최적화된 kime 설정 파일을 생성합니다...${NC}"
+cat > ~/.config/kime/config.yaml << 'EOL'
+# Kime Configuration for KDE Plasma
+# 저장 위치: ~/.config/kime/config.yaml
+
+daemon:
+  modules:
+    - Wayland      # KDE Wayland 세션용
+    - Xim          # 레거시 X11 앱 지원
+    - Indicator    # 시스템 트레이 아이콘
+
 indicator:
- icon_color: "White"
+  icon_color: Black      # Black, White, Colorful 중 선택
+  icon_type: tray        # tray, panel, both
+  show_animated: true    # 전환시 애니메이션 효과
+
+log:
+  global_level: INFO     # DEBUG, INFO, WARN, ERROR 중 선택
+
+# KDE Plasma 특화 설정
+plasma:
+  enabled: true
+  virtual_keyboard: true
+  kwin_integration: true
+
 engine:
- hangul_keys: ["Hangul", "Alt_R"]
- compose_keys: ["Shift-Space"]
- toggle_keys: ["Hangul", "Alt_R"]
- xim_preedit_font: [D2Coding, 15.0]
- latin_mode_on_press_shift: false
- latin_mode_on_press_caps: false
- global_category_mode: true
- global_hotkeys: []
- word_commit: false
- commit_key1: "Shift"
- commit_key2: "Shift"
+  translation_layer: null
+  default_category: Latin   # 시작시 영어 모드
+  global_category_state: false
+  
+  # 전역 단축키 (간소화)
+  global_hotkeys:
+    # 한/영 키 (대부분의 키보드)
+    Hangul:
+      behavior: !Toggle
+        - Hangul
+        - Latin
+      result: Consume
+    
+    # Windows/Super + Space (맥 사용자 습관용)
+    Super-Space:
+      behavior: !Toggle
+        - Hangul
+        - Latin
+      result: Consume
+    
+    # Esc 키로 항상 영어 모드
+    Esc:
+      behavior: !Switch Latin
+      result: Bypass
+
+  # 한글 모드 특수 단축키
+  category_hotkeys:
+    Hangul:
+      # 한자 변환
+      ControlR:
+        behavior: !Mode Hanja
+        result: Consume
+      HangulHanja:
+        behavior: !Mode Hanja
+        result: Consume
+      F9:
+        behavior: !Mode Hanja
+        result: ConsumeIfProcessed
+
+  # 특수 모드 단축키
+  mode_hotkeys:
+    Hanja:
+      Enter:
+        behavior: Commit
+        result: ConsumeIfProcessed
+      Tab:
+        behavior: Commit
+        result: ConsumeIfProcessed
+      Up:
+        behavior: !PrevPage
+        result: ConsumeIfProcessed
+      Down:
+        behavior: !NextPage
+        result: ConsumeIfProcessed
+
+  # 폰트 설정
+  candidate_font: "Noto Sans CJK KR 12"
+  xim_preedit_font:
+    - "Noto Sans CJK KR"
+    - 15.0
+
+  # 라틴(영문) 설정
+  latin:
+    layout: Qwerty
+    preferred_direct: true    # 직접 입력 모드 선호
+    auto_commit: true         # 자동 커밋
+
+  # 한글 설정
+  hangul:
+    layout: dubeolsik          # 두벌식
+    word_commit: false         # 단어 단위 커밋
+    auto_reorder: true         # 자동 자소 재배열
+    preedit_johab: Needed      # 조합형 프리에딧
+    
+    # 고급 한글 옵션
+    addons:
+      all:
+        - ComposeChoseongSsang  # 쌍자음 합성
+        - ComposeJungseongSsang # 쌍모음 합성
+      
+      dubeolsik:
+        - TreatJongseongAsChoseong  # 종성을 초성으로 처리
+
+# Wayland 관련 설정 (KDE Wayland 기본)
+wayland:
+  use_virtual_keyboard: true
+  text_input_v1: true
+  text_input_v3: true
+  input_method_v2: true
+
+# GTK/Qt 통합
+gtk:
+  im_module: true
+  use_system_theme: true
+
+qt:
+  input_method: true
+  use_system_theme: true
+
+# 앱별 설정
+app_profile:
+  # 터미널은 항상 직접 입력 모드
+  - class: ^(org\.kde\.konsole|gnome-terminal.*)$
+    engine:
+      default_category: Latin
+      global_category_state: true
+  
+  # 게임은 IME 비활성화
+  - class: .*(steam|game).*
+    daemon:
+      modules: []
 EOL
 
-# Hoffice용 kime 플러그인 설정
-echo -e "${BLUE}Hoffice용 입력기 플러그인을 설정합니다...${NC}"
-sudo mkdir -p "${HNCCONTEXT}"
+# Hancom Office 관련 디렉토리 설정 (호환성 유지)
+HNCDIR="/opt/hnc"
+HNCCONTEXT="/opt/hnc/hoffice11/Bin/qt/plugins/platforminputcontexts"
+sudo mkdir -p "${HNCCONTEXT}" 2>/dev/null || true
 
-# kime Qt 플러그인 다운로드 및 설치
-echo -e "${BLUE}kime Qt 플러그인을 다운로드하고 설치합니다...${NC}"
+# kime Qt 플러그인 다운로드 및 설치 (Hoffice용)
+echo -e "${BLUE}Hoffice용 kime Qt 플러그인을 설치합니다...${NC}"
 TEMP_DIR=$(mktemp -d)
 cd "${TEMP_DIR}"
-curl -# -o libkime-qt-5.11.3.so -fL 'https://github.com/Riey/kime/releases/latest/download/libkime-qt-5.11.3.so'
-sudo install -Dm755 libkime-qt-5.11.3.so "${HNCCONTEXT}/libkime-qt-5.11.3.so"
+curl -s -o libkime-qt-5.11.3.so -fL 'https://github.com/Riey/kime/releases/latest/download/libkime-qt-5.11.3.so' 2>/dev/null || true
+if [ -f "libkime-qt-5.11.3.so" ]; then
+    sudo install -Dm755 libkime-qt-5.11.3.so "${HNCCONTEXT}/libkime-qt-5.11.3.so" 2>/dev/null || true
+fi
 cd
 rm -rf "${TEMP_DIR}"
 
-# X11용 설정을 합니다
-echo -e "${BLUE}X11용 kime 설정을 하고 있습니다...${NC}"
-touch ~/.xprofile
-grep -v "GTK_IM_MODULE\|QT_IM_MODULE\|XMODIFIERS\|OOO_FORCE_DESKTOP\|XDG_CURRENT_DESKTOP\|SAL_USE_VCLPLUGIN" ~/.xprofile > ~/.xprofile.tmp || true
-cat >> ~/.xprofile.tmp << 'EOL'
-export GTK_IM_MODULE=kime
-export QT_IM_MODULE=kime
-export XMODIFIERS=@im=kime
-export OOO_FORCE_DESKTOP=gnome
-export XDG_CURRENT_DESKTOP=gnome
-export SAL_USE_VCLPLUGIN=gtk3
-EOL
-mv ~/.xprofile.tmp ~/.xprofile
+# 환경 변수 설정
+echo -e "\n${BLUE}환경 변수를 설정합니다...${NC}"
 
-# Wayland용 설정을 합니다
-echo -e "${BLUE}Wayland용 kime 설정을 하고 있습니다...${NC}"
+# .bash_profile 설정
 touch ~/.bash_profile
-grep -v "GTK_IM_MODULE\|QT_IM_MODULE\|XMODIFIERS\|OOO_FORCE_DESKTOP\|XDG_CURRENT_DESKTOP\|SAL_USE_VCLPLUGIN" ~/.bash_profile > ~/.bash_profile.tmp || true
-cat >> ~/.bash_profile.tmp << 'EOL'
+cat > ~/.bash_profile << 'EOL'
+# Kime Input Method Settings
+export GTK_IM_MODULE=kime
+export QT_IM_MODULE=kime
+export XMODIFIERS=@im=kime
+
+# KDE Plasma Settings
+export OOO_FORCE_DESKTOP=gnome
+export XDG_CURRENT_DESKTOP=KDE
+export SAL_USE_VCLPLUGIN=gtk3
+
+# Wayland/X11 Session Detection
+if [ "$XDG_SESSION_TYPE" = "wayland" ]; then
+    export WAYLAND_DISPLAY=wayland-0
+    export CLUTTER_BACKEND=wayland
+    export SDL_VIDEODRIVER=wayland
+    export MOZ_ENABLE_WAYLAND=1
+else
+    export CLUTTER_BACKEND=x11
+    export SDL_VIDEODRIVER=x11
+fi
+
+# Locale Settings
+export LANG=ko_KR.UTF-8
+export LC_ALL=ko_KR.UTF-8
+
+# Add local bin to PATH
+export PATH="$HOME/.local/bin:$PATH"
+
+# Rust/Cargo
+export PATH="$HOME/.cargo/bin:$PATH"
+
+# Julia
+export PATH="$HOME/.juliaup/bin:$PATH"
+EOL
+
+# .xprofile 설정 (X11 세션용)
+touch ~/.xprofile
+cat > ~/.xprofile << 'EOL'
+# X11 Session Settings
 export GTK_IM_MODULE=kime
 export QT_IM_MODULE=kime
 export XMODIFIERS=@im=kime
 export OOO_FORCE_DESKTOP=gnome
-export XDG_CURRENT_DESKTOP=gnome
+export XDG_CURRENT_DESKTOP=KDE
 export SAL_USE_VCLPLUGIN=gtk3
+export LANG=ko_KR.UTF-8
+export LC_ALL=ko_KR.UTF-8
 EOL
-mv ~/.bash_profile.tmp ~/.bash_profile
 
 # 자동 시작에 kime를 추가합니다
-echo -e "${BLUE}kime를 자동 시작 목록에 추가하고 있습니다...${NC}"
+echo -e "${BLUE}kime를 자동 시작 목록에 추가합니다...${NC}"
 mkdir -p ~/.config/autostart
 cat > ~/.config/autostart/kime.desktop << 'EOL'
 [Desktop Entry]
 Type=Application
-Exec=kime
-Hidden=false
-NoDisplay=false
+Name=Kime Input Method
+Comment=Korean Input Method Editor
+Exec=/usr/bin/kime
+Icon=input-keyboard
+Terminal=false
+Categories=Utility;
+StartupNotify=false
 X-GNOME-Autostart-enabled=true
-Name[en_US]=kime
-Name=kime
-Comment[en_US]=Korean Input Method Editor
-Comment=한글 입력기
+EOL
+
+# KDE Plasma 가상 키보드 통합 설정
+echo -e "${BLUE}KDE Plasma 가상 키보드 통합을 설정합니다...${NC}"
+if command -v kwriteconfig5 &> /dev/null; then
+    kwriteconfig5 --file ~/.config/kwinrc --group org.kde.kwin.VirtualKeyboard --key Layout "org.kde.plasma.keyboard.kime" 2>/dev/null || true
+fi
+
+# systemd user 서비스 설정
+echo -e "${BLUE}systemd 사용자 서비스를 설정합니다...${NC}"
+mkdir -p ~/.config/systemd/user/
+cat > ~/.config/systemd/user/kime.service << 'EOL'
+[Unit]
+Description=Korean Input Method Editor
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=dbus
+BusName=im.kime.Daemon
+ExecStart=/usr/bin/kime
+Restart=on-failure
+RestartSec=3
+Environment="GTK_IM_MODULE=kime"
+Environment="QT_IM_MODULE=kime"
+Environment="XMODIFIERS=@im=kime"
+Environment="LANG=ko_KR.UTF-8"
+
+[Install]
+WantedBy=graphical-session.target
 EOL
 
 # 설치 확인
-echo -e "${BLUE}설치 확인 중...${NC}"
+echo -e "\n${BLUE}설치 확인 중...${NC}"
 if command -v juliaup &> /dev/null; then
-    echo -e "${GREEN}Julia(juliaup)가 성공적으로 설치되었습니다.${NC}"
+    echo -e "${GREEN}✓ Julia(juliaup)가 성공적으로 설치되었습니다.${NC}"
 else
-    echo -e "${RED}Julia 설치에 실패했습니다.${NC}"
+    echo -e "${YELLOW}⚠ Julia 설치에 문제가 있을 수 있습니다.${NC}"
 fi
 
 if yay -Qi naver-whale-stable &> /dev/null; then
-    echo -e "${GREEN}Naver Whale이 성공적으로 설치되었습니다.${NC}"
+    echo -e "${GREEN}✓ Naver Whale이 성공적으로 설치되었습니다.${NC}"
 else
-    echo -e "${RED}Naver Whale 설치에 실패했습니다.${NC}"
+    echo -e "${YELLOW}⚠ Naver Whale 설치에 문제가 있을 수 있습니다.${NC}"
 fi
 
 if yay -Qi hoffice &> /dev/null; then
-    echo -e "${GREEN}한글 오피스가 성공적으로 설치되었습니다.${NC}"
+    echo -e "${GREEN}✓ 한글 오피스가 성공적으로 설치되었습니다.${NC}"
 else
-    echo -e "${RED}한글 오피스 설치에 실패했습니다.${NC}"
+    echo -e "${YELLOW}⚠ 한글 오피스 설치에 문제가 있을 수 있습니다.${NC}"
 fi
 
-if yay -Qi sublime-text-4 &> /dev/null; then
-    echo -e "${GREEN}아마 다르것들도 성공적으로 설치되었습니다.${NC}"
+if pacman -Qi kime-git &> /dev/null; then
+    echo -e "${GREEN}✓ kime-git이 성공적으로 설치되었습니다.${NC}"
 else
-    echo -e "${RED}뭔진 모르지만 몇가지 설치를 실패했습니다.${NC}"
+    echo -e "${RED}✗ kime-git 설치에 실패했습니다.${NC}"
 fi
 
-# kime 서비스 재시작
-echo -e "${BLUE}kime 서비스를 재시작합니다...${NC}"
-pkill kime 2>/dev/null || true
-kime &
+# kime 서비스 활성화 및 시작
+echo -e "\n${BLUE}kime 서비스를 시작합니다...${NC}"
+systemctl --user daemon-reload
+systemctl --user enable kime.service
+systemctl --user start kime.service
+
+# kime 확인
+if command -v kime-check &> /dev/null; then
+    echo -e "\n${BLUE}kime 상태 확인:${NC}"
+    kime-check | head -20
+fi
 
 # Virtualbox 초기설정 
-sudo modprobe vboxdrv
+echo -e "\n${BLUE}VirtualBox 설정 중...${NC}"
+sudo modprobe vboxdrv 2>/dev/null || true
 sudo usermod -aG vboxusers $USER
 
-#bluetooth 켜기
+# bluetooth 켜기
+echo -e "${BLUE}Bluetooth 서비스 시작 중...${NC}"
 sudo systemctl start bluetooth
 sudo systemctl enable bluetooth
 
-#한글설정 
- echo "LANG=ko_KR.UTF-8" | sudo tee -a /etc/locale.conf
- sudo locale-gen
+# 로케일 설정
+echo -e "${BLUE}한글 로케일 설정 중...${NC}"
+echo "LANG=ko_KR.UTF-8" | sudo tee -a /etc/locale.conf
+sudo locale-gen
 
-echo -e "${GREEN}설치가 완료되었습니다!${NC}"
-echo -e "${GREEN}변경사항을 적용하려면 시스템을 재시작하거나 로그아웃 후 다시 로그인해주세요.${NC}"
-echo -e "${GREEN}Julia를 사용하기 위해 터미널을 재시작하거나 'source ~/.bashrc'를 실행해주세요.${NC}"
-echo -e "${GREEN}한글 오피스에서 한글 입력이 가능해야 합니다.${NC}"
-echo -e "${GREEN}오른쪽 Alt키나 한/영 키를 사용하여 한글/영문 입력을 전환할 수 있습니다.${NC}"
+# 최종 메시지
+echo -e "\n${GREEN}============================================${NC}"
+echo -e "${GREEN}         설치가 완료되었습니다!              ${NC}"
+echo -e "${GREEN}============================================${NC}"
+echo -e "\n${YELLOW}다음 단계:${NC}"
+echo -e "1. 시스템을 ${GREEN}재시작${NC}하거나 로그아웃 후 다시 로그인하세요"
+echo -e "2. kime 입력기가 자동으로 시작됩니다"
+echo -e "3. ${GREEN}한/영${NC} 키 또는 ${GREEN}Win+Space${NC}로 한영 전환"
+echo -e "4. 시스템 트레이에 kime 아이콘이 표시됩니다"
+echo -e "5. 환경 변수 적용을 위해 터미널을 재시작하세요"
+echo -e "\n${YELLOW}문제 해결:${NC}"
+echo -e "- kime-check 명령어로 상태 확인"
+echo -e "- systemctl --user status kime 로 서비스 상태 확인"
+echo -e "- ~/.config/kime/config.yaml 파일로 설정 조정"
+echo -e "\n${GREEN}즐거운 한글 입력 되세요! 😊${NC}"
